@@ -16,6 +16,8 @@ pipeline {
     parameters {
         string(name: 'version', defaultValue: '', description: 'What is the artifact version?')
         string(name: 'environment', defaultValue: 'dev', description: 'What is environment?')
+        booleanParam(name: 'Destroy', defaultValue: 'false', description: 'What is Destroy?')
+        booleanParam(name: 'Create', defaultValue: 'false', description: 'What is Create?')
     }
     // build
     stages {
@@ -47,10 +49,28 @@ pipeline {
         }
 
         stage('Apply') {
+            when{
+                expression{
+                    params.Create
+                }
+            }
             steps {
                 sh """
                     cd terraform
                     terraform apply -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}" -auto-approve
+                """
+            }
+        }
+        stage('Destroy') {
+            when{
+                expression{
+                    params.Destroy
+                }
+            }
+            steps {
+                sh """
+                    cd terraform
+                    terraform destory -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}" -auto-approve
                 """
             }
         }
