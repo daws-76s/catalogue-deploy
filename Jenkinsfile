@@ -44,7 +44,7 @@ pipeline {
                     sh """
                         cd helm
                         sed -i 's/IMAGE_VERSION/${params.version}/g' values.yaml
-                        helm upgrade --install ${component} -n roboshop .
+                        helm upgrade --install catalogue -n roboshop .
                     """
                 }
             }
