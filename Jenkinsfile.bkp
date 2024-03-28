@@ -30,24 +30,53 @@ pipeline {
             }
         }
 
-        stage('EKS Login') {
-                steps {
-                    script{
-                        sh """
-                            aws eks update-kubeconfig --region us-east-1 --name roboshop-${params.environment}
-                        """
-                    }
-                }
-        }
-        stage('EKS Deploy') {
+        stage('Init') {
             steps {
-                script{
-                    sh """
-                        cd helm
-                        sed -i 's/IMAGE_VERSION/${params.version}/g' values.yaml
-                        helm upgrade --install ${component} -n roboshop .
-                    """
+                sh """
+                    cd terraform
+                    terraform init --backend-config=${params.environment}/backend.tf -reconfigure
+                """
+            }
+        }
+
+        stage('Plan') {
+            when{
+                expression{
+                    params.Create
                 }
+            }
+            steps {
+                sh """
+                    cd terraform
+                    terraform plan -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}"
+                """
+            }
+        }
+
+        stage('Apply') {
+            when{
+                expression{
+                    params.Create
+                }
+            }
+            steps {
+                sh """
+                    cd terraform
+                    terraform apply -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}" -auto-approve
+                """
+            }
+        }
+        stage('Destroy') {
+            when{
+                expression{
+                    params.Destroy
+                }
+            }
+            steps {
+                sh """
+                    cd terraform
+                    terraform destroy -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}" -auto-approve
+                """
             }
         }
         
